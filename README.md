@@ -1,3 +1,6 @@
+# PROYECTO HB2
+WEB DE NOTICIA COLABORATIVAS
+
 TÍTULO
 Web de noticias colaborativas.
 
@@ -28,5 +31,5 @@ USUARIOS REGISTRADOS
 ● Editar una noticia publicada por el mismo usuario
 ● Borrar una noticia publicada por el usuario
 ● Opcional
-○ Gestión del perfil de usuario (Nombre, Email, Biografía, Foto, ...)
-○ Votar positivamente o negativamente otras noticias
+○ Gestión del perfil de usuario (Nombre, Email, Biografía, Foto, …)
+○ Votar positivamente o negativamente otras noticia
