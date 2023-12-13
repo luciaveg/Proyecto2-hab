@@ -1,6 +1,6 @@
 import "dotenv/config.js";
 import express from "express";
-import getConnection from "../db";
+import connectionDB from "../db";
 import bcrypt from "bcrypt";
 
 const app = express();
