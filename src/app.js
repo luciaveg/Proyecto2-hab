@@ -66,3 +66,38 @@ app.post("/login", async (req, res) => {
         token,
     });
 });
+
+app.use(bodyParser.json());
+
+app.post("/news", verifyToken, (req, res) => {
+  jwt.verify(req.token, "secretKey", (err, authData) => {
+    if (err) {
+      res.sendStatus(403);
+    } else {
+      const newNews = req.body;
+
+      res.json({ message: "Noticia creada con éxito", data: newNews });
+    }
+  });
+});
+
+function verifyToken(req, res, next) {
+  const bearerHeader = req.headers["authorization"];
+
+  if (typeof bearerHeader !== "undefined") {
+    const bearerToken = bearerHeader.split(" ")[1]
+  };
+  }
+
+
+  app.delete("/delete/news/:id", verifyToken, (req, res) => {
+    jwt.verify(req.token, "secretKey", (err, authData) => {
+      if (err) {
+        res.sendStatus(403);
+      } else {
+        `DELETE * FROM news WHERE id = ?`,
+  
+        res.json({ message: "Noticia eliminada con éxito"});
+      }
+    });
+  });
