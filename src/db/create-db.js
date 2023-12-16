@@ -1,11 +1,9 @@
 import "dotenv/config.js";
 import connectDB from "./connection-db.js";
-import mysql from "mysql2/promise";
 
 dotenv.config();
 
 const DB_NAME = process.env.MYSQL_DB;
-const { MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE } = process.env;
 
 const db = connectDB();
 
@@ -29,10 +27,15 @@ CREATE TABLE users (
 
 console.log("Creando tabla themes...");
 await db.query(`
-CREATE TABLE theme (
+CREATE TABLE themes (
 	id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(64)
 `);
+
+console.log(`Añadiendo themes`);
+await db.query(
+  `INSERT INTO themes(name) VALUES ("Politica"), ("Deporte"), ("Musica"), ("Cocina");`
+);
 
 console.log("Creando tabla news...");
 await db.query(`

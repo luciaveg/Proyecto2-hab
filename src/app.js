@@ -1,7 +1,6 @@
 import "dotenv/config.js";
 import bodyParser from "body-parser";
 import express from "express";
-import connectionDB from "../db";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 
