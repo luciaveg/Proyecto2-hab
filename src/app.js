@@ -82,9 +82,31 @@ app.post("/news", verifyToken, (req, res) => {
 });
 
 function verifyToken(req, res, next) {
+<<<<<<< HEAD
   const bearerHeader = req.headers["authorization"]};
 
   if (typeof bearerHeader !== "undefined") {
     const bearerToken = bearerHeader.split(" ")[1]};
 
   
+=======
+  const bearerHeader = req.headers["authorization"];
+
+  if (typeof bearerHeader !== "undefined") {
+    const bearerToken = bearerHeader.split(" ")[1]
+  };
+  }
+
+
+  app.delete("/delete/news/:id", verifyToken, (req, res) => {
+    jwt.verify(req.token, "secretKey", (err, authData) => {
+      if (err) {
+        res.sendStatus(403);
+      } else {
+        `DELETE * FROM news WHERE id = ?`,
+  
+        res.json({ message: "Noticia eliminada con éxito"});
+      }
+    });
+  });
+>>>>>>> b960304ace7e14c5ffbd235c38b962389b83dc35
