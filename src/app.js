@@ -1,7 +1,9 @@
 import "dotenv/config.js";
+import bodyParser from "body-parser";
 import express from "express";
 import connectionDB from "../db";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 
 const app = express();
 
@@ -104,4 +106,96 @@ app.delete("/delete/news/:id", verifyToken, (req, res) => {
         res.json({ message: "Noticia eliminada con éxito" });
     }
   });
+});
+
+app.use(async (req, res, next) => {
+  try {
+    const db = getConnection();
+
+    const [rows] = await db.query("SELECT * FROM news ORDER BY createdAt DESC");
+
+    req.sortedNews = rows;
+
+    next();
+  } catch (error) {
+    console.error("Error al obtener noticias:", error);
+    res.status(500).json({ error: "Error al obtener noticias" });
+  }
+});
+
+app.get("/news", (req, res) => {
+  res.json(req.sortedNews);
+});
+
+app.use("/news", (req, res, next) => {
+  const themeId = req.query.theme;
+
+  // Si se proporciona un parámetro de tema en la URL
+  if (themeId) {
+    req.themeFilter = themeId;
+  }
+
+  next();
+});
+
+app.get("/news", async (req, res) => {
+  try {
+    let sqlQuery = "SELECT * FROM news";
+
+    if (req.themeFilter) {
+      sqlQuery += ` WHERE themeId = ${req.themeFilter}`;
+    }
+
+    sqlQuery += " ORDER BY createdAt DESC";
+
+    const [rows] = await db.execute(sqlQuery);
+
+    res.json(rows);
+  } catch (error) {
+    console.error("Error al obtener noticias:", error);
+    res.status(500).json({ error: "Error al obtener noticias" });
+  }
+});
+
+app.get("/news/:idNews", async (req, res) => {
+  try {
+    const newsId = req.params.idNews;
+
+    if (isNaN(newsId)) {
+      res.status(400).json({ error: "ID de noticia no válido" });
+      return;
+    }
+
+    const [result] = await db.execute("SELECT * FROM news WHERE id = ?", [
+      newsId,
+    ]);
+
+    if (result.length === 0) {
+      res.status(404).json({ error: "Noticia no encontrada" });
+      return;
+    }
+
+    const newsDetails = result[0];
+    res.json(newsDetails);
+  } catch (error) {
+    console.error("Error al obtener detalles de la noticia:", error);
+    res.status(500).json({ error: "Error al obtener detalles de la noticia" });
+  }
+});
+
+app.get("/themes", async (req, res) => {
+  try {
+    const [result] = await db.execute("SELECT * FROM theme");
+
+    if (result.length === 0) {
+      res.status(404).json({ error: "No se encontraron temas" });
+      return;
+    }
+
+    const themesList = result;
+    res.json(themesList);
+  } catch (error) {
+    console.error("Error al obtener la lista de temas:", error);
+    res.status(500).json({ error: "Error al obtener la lista de temas" });
+  }
 });
