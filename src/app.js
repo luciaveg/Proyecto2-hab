@@ -14,6 +14,21 @@ app.listen(PORT || 3000, () => {
 
 const jsonParser = express.json();
 
+//Manejadores de errores
+app.use((req, res) => {
+  res.status(404).send({
+    status: "error",
+    mesage: "Not found",
+  });
+});
+app.use((error, req, res, next) => {
+  console.log(error);
+  res.status(404).send({
+    status: "error",
+    mesasage: "Not found",
+  });
+});
+
 app.post("/register", jsonParser, async (req, res) => {
   const { nickName, email, password } = req.body;
 
@@ -81,7 +96,47 @@ app.post("/news", verifyToken, (req, res) => {
   });
 });
 
-app.put("/news/:idNews", verifyToken, (req, res) => {
+app.get("/news?today", async (req, res) => {
+  try {
+    let newsToday =
+      "SELECT * FROM news WHERE publishedAt DATETIME = CURRENT_TIMESTAMP,";
+    if (!newsToday) {
+      res.status(500).json({ error: "No existen noticias de hoy" });
+    }
+    if (newsToday) {
+      newsToday += " ORDER BY createdAt DESC";
+
+      const [rows] = await db.execute(sqlQuery);
+
+      res.json(rows);
+    }
+  } catch (error) {
+    res.status(500).json({ error: "Error al obtener noticias" });
+  }
+  return;
+});
+
+app.get("/news?theme?", async (req, res) => {
+  try {
+    let newsTheme =
+      "SELECT * FROM news WHERE publishedAt DATETIME = CURRENT_TIMESTAMP,";
+    if (!newsTheme) {
+      res.status(500).json({ error: "No existen noticias con este Tema" });
+    }
+    if (newsTheme) {
+      newsTheme += " ORDER BY createdAt DESC";
+
+      const [rows] = await db.execute(sqlQuery);
+
+      res.json(rows);
+    }
+  } catch (error) {
+    res.status(500).json({ error: "Error al obtener noticias con este Tema" });
+    return;
+  }
+});
+
+app.put("/news/:id", verifyToken, (req, res) => {
   jwt.verify(req.token, "secretKey", (err, authData) => {
     if (err) {
       res.sendStatus(403);
