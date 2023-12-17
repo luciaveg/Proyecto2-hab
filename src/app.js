@@ -47,7 +47,7 @@ app.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   const [result] = await db.execute(
-    `SELECT * FROM users WHERE email = ? LIMIT = 1`,
+    `SELECT * FROM users WHERE email = ? LIMIT 1`,
     [email]
   );
   const maybeUser = result[0];
