@@ -96,6 +96,19 @@ app.post("/news", verifyToken, (req, res) => {
   });
 });
 
+function verifyToken(req, res, next) {
+  const bearerHeader = req.headers['authorization'];
+
+  if (typeof bearerHeader !== 'undefined') {
+    const bearerToken = bearerHeader.split(' ')[1];
+    req.token = bearerToken;
+    next();
+  } else {
+    res.sendStatus(401);
+  }
+}
+
+
 app.get("/news?today", async (req, res) => {
   try {
     let newsToday =
@@ -184,7 +197,6 @@ app.get("/news", (req, res) => {
 app.use("/news", (req, res, next) => {
   const themeId = req.query.theme;
 
-  // Si se proporciona un parámetro de tema en la URL
   if (themeId) {
     req.themeFilter = themeId;
   }
@@ -251,5 +263,47 @@ app.get("/themes", async (req, res) => {
   } catch (error) {
     console.error("Error al obtener la lista de temas:", error);
     res.status(500).json({ error: "Error al obtener la lista de temas" });
+  }
+});
+
+app.get("/news", async (req, res) => {
+  try {
+    let sqlQuery = `
+      SELECT 
+        news.*, 
+        COUNT(CASE WHEN likes.vote = 1 THEN 1 END) AS positiveVotes,
+        COUNT(CASE WHEN likes.vote = 0 THEN 1 END) AS negativeVotes
+      FROM news
+      LEFT JOIN likes ON news.id = likes.newsId
+    `;
+
+    const { theme, today, order, direction } = req.query;
+
+    if (theme) {
+      sqlQuery += ` WHERE themesId = ${theme}`;
+    }
+
+    if (today) {
+      sqlQuery += ` AND DATE(news.createdAt) = CURDATE()`;
+    }
+
+    if (order && direction) {
+      sqlQuery += ` ORDER BY ${order} ${direction.toUpperCase()}`;
+    }
+
+    sqlQuery += " GROUP BY news.id";
+
+    const [result] = await db.execute(sqlQuery);
+
+    if (result.length === 0) {
+      res.status(404).json({ error: "No se encontraron noticias" });
+      return;
+    }
+
+    const newsList = result;
+    res.json(newsList);
+  } catch (error) {
+    console.error("Error al obtener el listado de noticias:", error);
+    res.status(500).json({ error: "Error al obtener el listado de noticias" });
   }
 });
