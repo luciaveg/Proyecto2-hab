@@ -291,3 +291,48 @@ app.get("/themes/id", async (req, res) => {
     res.status(500).json({ error: "Error al obtener la lista de temas" });
   }
 });
+<<<<<<< HEAD
+=======
+
+app.get("/news", async (req, res) => {
+  try {
+    let sqlQuery = `
+      SELECT 
+        news.*, 
+        COUNT(CASE WHEN likes.vote = 1 THEN 1 END) AS positiveVotes,
+        COUNT(CASE WHEN likes.vote = 0 THEN 1 END) AS negativeVotes
+      FROM news
+      LEFT JOIN likes ON news.id = likes.newsId
+    `;
+
+    const { theme, today, order, direction } = req.query;
+
+    if (theme) {
+      sqlQuery += ` WHERE themesId = ${theme}`;
+    }
+
+    if (today) {
+      sqlQuery += ` AND DATE(news.createdAt) = CURDATE()`;
+    }
+
+    if (order && direction) {
+      sqlQuery += ` ORDER BY ${order} ${direction.toUpperCase()}`;
+    }
+
+    sqlQuery += " GROUP BY news.id";
+
+    const [result] = await db.execute(sqlQuery);
+
+    if (result.length === 0) {
+      res.status(404).json({ error: "No se encontraron noticias" });
+      return;
+    }
+
+    const newsList = result;
+    res.json(newsList);
+  } catch (error) {
+    console.error("Error al obtener el listado de noticias:", error);
+    res.status(500).json({ error: "Error al obtener el listado de noticias" });
+  }
+});
+>>>>>>> 76a38edbb73abcf3120bf71c917c346376ee04f6
