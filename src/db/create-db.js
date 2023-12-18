@@ -5,13 +5,24 @@ const DB_NAME = process.env.MYSQL_DB;
 
 const db = connectDB();
 
-console.log("Limpiando base de datos vieja...");
-await db.query(`DROP DATABASE IF EXISTS ${DB_NAME}`);
-console.log("Creando base de datos...");
-await db.query(`CREATE DATABASE ${DB_NAME}`);
+async function main() {
+  const DB_NAME = process.env.MYSQL_DB;
 
-await db.query(`USE ${DB_NAME}`);
+  const db = connectDB();
 
+  try {
+    console.log("Limpiando base de datos vieja...");
+    await db.query(`DROP DATABASE IF EXISTS ${DB_NAME}`);
+    console.log("Base de datos eliminada correctamente.");
+  } catch (error) {
+    console.error("Error al eliminar la base de datos:", error);
+  } finally {
+    await db.end();
+  }
+}
+
+// Llama a la función principal
+main();
 console.log("Creando tabla users...");
 await db.query(`
 CREATE TABLE users (

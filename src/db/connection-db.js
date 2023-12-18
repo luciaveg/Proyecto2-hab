@@ -1,9 +1,8 @@
 import mysql from "mysql2/promise";
 import "dotenv/config.js";
 
-dotenv.config();
 
-const { MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DB } = process.env;
+const { MYSQL_HOST, MYSQL_USER, MYSQL_PASS, MYSQL_DB } = process.env;
 
 const connectDB = async () => {
   try {
