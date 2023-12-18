@@ -123,19 +123,6 @@ app.post("/news", verifyToken, (req, res) => {
   });
 });
 
-function referencToken(req, res, next) {
-  const bearerHeader = req.headers["authorization"];
-
-  if (typeof bearerHeader !== "undefined") {
-    const bearerToken = bearerHeader.split(" ")[1];
-    req.token = bearerToken;
-    next();
-  } else {
-    res.sendStatus(401);
-  }
-}
-const verifyToken = referencToken();
-
 app.get("/news?today", async (req, res) => {
   try {
     let newsToday = `SELECT * FROM news WHERE publishedAt DATETIME = CURRENT_TIMESTAMP`;
@@ -291,8 +278,6 @@ app.get("/themes/id", async (req, res) => {
     res.status(500).json({ error: "Error al obtener la lista de temas" });
   }
 });
-<<<<<<< HEAD
-=======
 
 app.get("/news", async (req, res) => {
   try {
@@ -335,4 +320,3 @@ app.get("/news", async (req, res) => {
     res.status(500).json({ error: "Error al obtener el listado de noticias" });
   }
 });
->>>>>>> 76a38edbb73abcf3120bf71c917c346376ee04f6
