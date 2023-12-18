@@ -1,9 +1,10 @@
 import "dotenv/config.js";
-import connectDB from "./connection-db.js";
+
+import db from "./connection-db.js";
 
 const DB_NAME = process.env.MYSQL_DB;
 
-const db = connectDB();
+//const db = connectDB();
 
 console.log("Limpiando base de datos vieja...");
 await db.query(`DROP DATABASE IF EXISTS ${DB_NAME}`);
