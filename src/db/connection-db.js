@@ -3,14 +3,14 @@ import "dotenv/config.js";
 
 dotenv.config();
 
-const { MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DATABASE } = process.env;
+const { MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DB } = process.env;
 
 const pool = mysql.createPool({
   connectionLimit: 10,
   host: MYSQL_HOST,
   user: MYSQL_USER,
   password: MYSQL_PASSWORD,
-  database: MYSQL_DATABASE,
+  database: MYSQL_DB,
   timezone: "Z",
 });
 
