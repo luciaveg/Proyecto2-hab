@@ -43,11 +43,26 @@ app.post("/register", jsonParser, async (req, res) => {
   res.status(200).send("Fué Registrado Exitosamente !");
 });
 
+app.put("/register/:id", verifyToken, (req, res) => {
+  jwt.verify(req.token, "secretKey", (err, authData) => {
+    if (err) {
+      res.sendStatus(403);
+    } else {
+      const editUser = req.params.userId;
+      const updatedUser = req.body;
+
+      res.json({
+        message: "Noticia editada con éxito",
+      });
+    }
+  });
+});
+
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   const [result] = await db.execute(
-    `SELECT * FROM users WHERE email = ? LIMIT = 1`,
+    `SELECT * FROM users WHERE email = ? AND isEnabled = TRUE AND LIMIT 1`,
     [email]
   );
   const maybeUser = result[0];
@@ -95,6 +110,19 @@ app.post("/news", verifyToken, (req, res) => {
     }
   });
 });
+
+function referencToken(req, res, next) {
+  const bearerHeader = req.headers["authorization"];
+
+  if (typeof bearerHeader !== "undefined") {
+    const bearerToken = bearerHeader.split(" ")[1];
+    req.token = bearerToken;
+    next();
+  } else {
+    res.sendStatus(401);
+  }
+}
+const verifyToken = referencToken();
 
 app.get("/news?today", async (req, res) => {
   try {
