@@ -99,6 +99,18 @@ app.post("/login", async (req, res) => {
 
 app.use(bodyParser.json());
 
+function verifyToken(req, res, next) {
+  const bearerHeader = req.headers["authorization"];
+
+  if (typeof bearerHeader !== "undefined") {
+    const bearerToken = bearerHeader.split(" ")[1];
+    req.token = bearerToken;
+    next();
+  } else {
+    res.sendStatus(401);
+  }
+}
+
 app.post("/news", verifyToken, (req, res) => {
   jwt.verify(req.token, "secretKey", (err, authData) => {
     if (err) {
@@ -126,8 +138,7 @@ const verifyToken = referencToken();
 
 app.get("/news?today", async (req, res) => {
   try {
-    let newsToday =
-      "SELECT * FROM news WHERE publishedAt DATETIME = CURRENT_TIMESTAMP,";
+    let newsToday = `SELECT * FROM news WHERE publishedAt DATETIME = CURRENT_TIMESTAMP`;
     if (!newsToday) {
       res.status(500).json({ error: "No existen noticias de hoy" });
     }
@@ -146,8 +157,7 @@ app.get("/news?today", async (req, res) => {
 
 app.get("/news?theme?", async (req, res) => {
   try {
-    let newsTheme =
-      "SELECT * FROM news WHERE publishedAt DATETIME = CURRENT_TIMESTAMP,";
+    let newsTheme = `SELECT * FROM news WHERE publishedAt DATETIME = CURRENT_TIMESTAMP`;
     if (!newsTheme) {
       res.status(500).json({ error: "No existen noticias con este Tema" });
     }
@@ -194,7 +204,7 @@ app.use(async (req, res, next) => {
   try {
     const db = getConnection();
 
-    const [rows] = await db.query("SELECT * FROM news ORDER BY createdAt DESC");
+    const [rows] = await db.query(`SELECT * FROM news ORDER BY createdAt DESC`);
 
     req.sortedNews = rows;
 
@@ -248,7 +258,7 @@ app.get("/news/:idNews", async (req, res) => {
       return;
     }
 
-    const [result] = await db.execute("SELECT * FROM news WHERE id = ?", [
+    const [result] = await db.execute(`SELECT * FROM news WHERE id = ?`, [
       newsId,
     ]);
 
@@ -265,9 +275,9 @@ app.get("/news/:idNews", async (req, res) => {
   }
 });
 
-app.get("/themes", async (req, res) => {
+app.get("/themes/id", async (req, res) => {
   try {
-    const [result] = await db.execute("SELECT * FROM theme");
+    const [result] = await db.execute(`SELECT * FROM theme`);
 
     if (result.length === 0) {
       res.status(404).json({ error: "No se encontraron temas" });
