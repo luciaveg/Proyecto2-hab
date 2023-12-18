@@ -5,21 +5,20 @@ dotenv.config();
 
 const { MYSQL_HOST, MYSQL_USER, MYSQL_PASSWORD, MYSQL_DB } = process.env;
 
-const pool = mysql.createPool({
-  connectionLimit: 10,
-  host: MYSQL_HOST,
-  user: MYSQL_USER,
-  password: MYSQL_PASSWORD,
-  database: MYSQL_DB,
-  timezone: "Z",
-});
-
 const connectDB = async () => {
   try {
-    const connection = await pool.getConnection();
+    const connection = await mysql.createConnection({
+      host: MYSQL_HOST,
+      user: MYSQL_USER,
+      password: MYSQL_PASS,
+      database: MYSQL_DB,
+    });
+
+    console.log('Conexión a la base de datos exitosa.');
+
     return connection;
   } catch (error) {
-    console.error("Error al conectar a la base de datos:", error.message);
+    console.error('Error al conectar a la base de datos:', error);
     throw error;
   }
 };
