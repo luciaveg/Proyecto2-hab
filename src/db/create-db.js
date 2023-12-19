@@ -18,7 +18,7 @@ CREATE TABLE users (
     nickName VARCHAR(64) UNIQUE,
     email VARCHAR(60) UNIQUE,
     password VARCHAR(64) NOT NULL,
-    profilePictureURL VARCHAR(64) NOT NULL,
+    profilePictureURL VARCHAR(64),
     createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     isEnabled BOOLEAN NOT NULL DEFAULT TRUE
     );

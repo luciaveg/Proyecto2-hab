@@ -3,38 +3,22 @@ import express from "express";
 import bcrypt from "bcrypt";
 import db from "../src/db/db.js";
 import jwt from "jsonwebtoken";
-import bodyParser from "body-parser";
+//import bodyParser from "body-parser";
 
 const app = express();
 
 const PORT = Number(process.env.MYSQL_PORT);
 
-app.listen(PORT || 3000, () => {
-  console.log(`Escuchando http://localhost:${PORT}`);
-});
-
-app.use(bodyParser());
-
-app.use((req, res) => {
-  res.status(404).send({
-    status: "error",
-    mesage: "Not found",
-  });
-});
-app.use((error, req, res, next) => {
-  console.log(error);
-  res.status(404).send({
-    status: "error",
-    mesasage: "Not found",
-  });
-});
+app.use(express.json());
 
 app.post("/register", async (req, res) => {
   const { nickName, email, password } = req.body;
 
   const hashedPassword = await bcrypt.hash(password, 12);
 
-  await db.execute(
+  const pool = db(process.env.MYSQL_DB);
+
+  await pool.execute(
     `INSERT INTO users(nickName, email, password) 
         VALUES (?, ?, ?)`,
     [nickName, email, hashedPassword]
@@ -61,10 +45,11 @@ app.put("/register/:id", verifyToken, (req, res) => {
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
-  const [result] = await db.execute(
-    `SELECT * FROM users WHERE email = ? AND isEnabled = TRUE AND LIMIT 1`,
-    [email]
-  );
+  const pool = db(process.env.MYSQL_DB);
+
+  const [result] = await pool.execute(`SELECT * FROM users WHERE email = ?`, [
+    email,
+  ]);
   const maybeUser = result[0];
   if (!maybeUser) {
     res.status(400).json({
@@ -348,4 +333,22 @@ app.put("/user/:id/photo", verifyToken, (req, res) => {
       });
     }
   });
+});
+
+app.use((req, res) => {
+  res.status(404).send({
+    status: "error",
+    mesage: "Not found",
+  });
+});
+app.use((error, req, res, next) => {
+  console.log(error);
+  res.status(404).send({
+    status: "error",
+    mesasage: "Not found",
+  });
+});
+
+app.listen(PORT || 3000, () => {
+  console.log(`Escuchando http://localhost:${PORT}`);
 });
