@@ -2,6 +2,7 @@ import "dotenv/config.js";
 import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import bodyParser from "body-parser";
 
 const app = express();
 
@@ -13,6 +14,7 @@ app.listen(PORT || 3000, () => {
 
 const jsonParser = express.json();
 app.use(jsonParser());
+//app.use(bodyParser());
 
 app.use((req, res) => {
   res.status(404).send({
@@ -84,7 +86,7 @@ app.post("/login", async (req, res) => {
     {
       id: maybeUser.id,
       nickName: maybeUser.nickName,
-      email: maybeUser.email,
+      profilePictureURL: maybeUser.profilePictureURL,
     },
     process.env.JWT_SECRET,
     {
@@ -112,6 +114,9 @@ app.post("/news", verifyToken, (req, res) => {
   jwt.verify(req.token, "secretKey", (err, authData) => {
     if (err) {
       res.sendStatus(403);
+    }
+    if (!bearerToken) {
+      res.status(401).send("unauthorized");
     } else {
       const newNews = req.body;
 
@@ -316,4 +321,32 @@ app.get("/news", async (req, res) => {
     console.error("Error al obtener el listado de noticias:", error);
     res.status(500).json({ error: "Error al obtener el listado de noticias" });
   }
+});
+
+app.put("/register/:id", verifyToken, (req, res) => {
+  jwt.verify(req.token, "secretKey", (err, authData) => {
+    if (err) {
+      res.sendStatus(403);
+    } else {
+      const editUser = req.params.userId;
+      const updatedUser = req.body;
+
+      res.json({
+        message: "Noticia editada con éxito",
+      });
+    }
+  });
+});
+
+app.put("/user/:id/photo", verifyToken, (req, res) => {
+  jwt.verify(req.token, "secretKey", (err, authData) => {
+    if (err) {
+      res.sendStatus(403);
+    } else {
+      const photoUser = req.body;
+      res.json({
+        message: "Foto editada con éxito",
+      });
+    }
+  });
 });
