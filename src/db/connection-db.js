@@ -22,7 +22,6 @@ const connectDB = async () => {
   }
 };
 
-export default connectDB;
 
 import createConnectionPool from "./db.js";
 const db = createConnectionPool(process.env.MYSQL_DB);

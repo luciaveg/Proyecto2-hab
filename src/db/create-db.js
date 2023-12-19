@@ -3,24 +3,21 @@ import "dotenv/config.js";
 import db from "./connection-db.js";
 
 const DB_NAME = process.env.MYSQL_DB;
-
-<<<<<<< HEAD
 const db = connectDB();
 
 async function main() {
   const DB_NAME = process.env.MYSQL_DB;
 
 console.log("Limpiando base de datos vieja...");
-=======
+
 console.log(`Limpiando base de datos vieja...`);
->>>>>>> 0e875b6e25cb67685955bdb82948f22fd2fa4ca6
 await db.query(`DROP DATABASE IF EXISTS ${DB_NAME}`);
 console.log("Creando base de datos...");
 await db.query(`CREATE DATABASE ${DB_NAME}`);
 
   const db = connectDB();
 
-<<<<<<< HEAD
+
   try {
     console.log("Limpiando base de datos vieja...");
     await db.query(`DROP DATABASE IF EXISTS ${DB_NAME}`);
@@ -32,12 +29,10 @@ await db.query(`CREATE DATABASE ${DB_NAME}`);
   }
 }
 
-// Llama a la función principal
 main();
 console.log("Creando tabla users...");
-=======
+
 console.log(`Creando tabla users...`);
->>>>>>> 0e875b6e25cb67685955bdb82948f22fd2fa4ca6
 await db.query(`
 CREATE TABLE users (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
