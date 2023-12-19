@@ -1,5 +1,4 @@
 import "dotenv/config.js";
-import bodyParser from "body-parser";
 import express from "express";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -13,8 +12,8 @@ app.listen(PORT || 3000, () => {
 });
 
 const jsonParser = express.json();
+app.use(jsonParser());
 
-//Manejadores de errores
 app.use((req, res) => {
   res.status(404).send({
     status: "error",
@@ -29,7 +28,7 @@ app.use((error, req, res, next) => {
   });
 });
 
-app.post("/register", jsonParser, async (req, res) => {
+app.post("/register", async (req, res) => {
   const { nickName, email, password } = req.body;
 
   const hashedPassword = await bcrypt.hash(password, 12);
@@ -96,8 +95,6 @@ app.post("/login", async (req, res) => {
     token,
   });
 });
-
-app.use(bodyParser.json());
 
 function verifyToken(req, res, next) {
   const bearerHeader = req.headers["authorization"];

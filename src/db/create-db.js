@@ -1,5 +1,6 @@
 import "dotenv/config.js";
-import connectDB from "./connection-db.js";
+
+import db from "./connection-db.js";
 
 const DB_NAME = process.env.MYSQL_DB;
 
@@ -7,6 +8,11 @@ const db = connectDB();
 
 async function main() {
   const DB_NAME = process.env.MYSQL_DB;
+
+console.log("Limpiando base de datos vieja...");
+await db.query(`DROP DATABASE IF EXISTS ${DB_NAME}`);
+console.log("Creando base de datos...");
+await db.query(`CREATE DATABASE ${DB_NAME}`);
 
   const db = connectDB();
 
