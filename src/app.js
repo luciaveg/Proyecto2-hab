@@ -1,6 +1,7 @@
 import "dotenv/config.js";
 import express from "express";
 import bcrypt from "bcrypt";
+import db from "../src/db/db.js";
 import jwt from "jsonwebtoken";
 import bodyParser from "body-parser";
 
@@ -12,9 +13,7 @@ app.listen(PORT || 3000, () => {
   console.log(`Escuchando http://localhost:${PORT}`);
 });
 
-const jsonParser = express.json();
-app.use(jsonParser());
-//app.use(bodyParser());
+app.use(bodyParser());
 
 app.use((req, res) => {
   res.status(404).send({
