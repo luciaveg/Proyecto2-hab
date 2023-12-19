@@ -1,39 +1,24 @@
 import "dotenv/config.js";
 import express from "express";
 import bcrypt from "bcrypt";
+import db from "../src/db/db.js";
 import jwt from "jsonwebtoken";
+//import bodyParser from "body-parser";
 
 const app = express();
 
 const PORT = Number(process.env.MYSQL_PORT);
 
-app.listen(PORT || 3000, () => {
-  console.log(`Escuchando http://localhost:${PORT}`);
-});
-
-const jsonParser = express.json();
-app.use(jsonParser());
-
-app.use((req, res) => {
-  res.status(404).send({
-    status: "error",
-    mesage: "Not found",
-  });
-});
-app.use((error, req, res, next) => {
-  console.log(error);
-  res.status(404).send({
-    status: "error",
-    mesasage: "Not found",
-  });
-});
+app.use(express.json());
 
 app.post("/register", async (req, res) => {
   const { nickName, email, password } = req.body;
 
   const hashedPassword = await bcrypt.hash(password, 12);
 
-  await db.execute(
+  const pool = db(process.env.MYSQL_DB);
+
+  await pool.execute(
     `INSERT INTO users(nickName, email, password) 
         VALUES (?, ?, ?)`,
     [nickName, email, hashedPassword]
@@ -60,10 +45,11 @@ app.put("/register/:id", verifyToken, (req, res) => {
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
-  const [result] = await db.execute(
-    `SELECT * FROM users WHERE email = ? AND isEnabled = TRUE AND LIMIT 1`,
-    [email]
-  );
+  const pool = db(process.env.MYSQL_DB);
+
+  const [result] = await pool.execute(`SELECT * FROM users WHERE email = ?`, [
+    email,
+  ]);
   const maybeUser = result[0];
   if (!maybeUser) {
     res.status(400).json({
@@ -84,7 +70,7 @@ app.post("/login", async (req, res) => {
     {
       id: maybeUser.id,
       nickName: maybeUser.nickName,
-      email: maybeUser.email,
+      profilePictureURL: maybeUser.profilePictureURL,
     },
     process.env.JWT_SECRET,
     {
@@ -112,6 +98,9 @@ app.post("/news", verifyToken, (req, res) => {
   jwt.verify(req.token, "secretKey", (err, authData) => {
     if (err) {
       res.sendStatus(403);
+    }
+    if (!bearerToken) {
+      res.status(401).send("unauthorized");
     } else {
       const newNews = req.body;
 
@@ -316,4 +305,50 @@ app.get("/news", async (req, res) => {
     console.error("Error al obtener el listado de noticias:", error);
     res.status(500).json({ error: "Error al obtener el listado de noticias" });
   }
+});
+
+app.put("/register/:id", verifyToken, (req, res) => {
+  jwt.verify(req.token, "secretKey", (err, authData) => {
+    if (err) {
+      res.sendStatus(403);
+    } else {
+      const editUser = req.params.userId;
+      const updatedUser = req.body;
+
+      res.json({
+        message: "Noticia editada con éxito",
+      });
+    }
+  });
+});
+
+app.put("/user/:id/photo", verifyToken, (req, res) => {
+  jwt.verify(req.token, "secretKey", (err, authData) => {
+    if (err) {
+      res.sendStatus(403);
+    } else {
+      const photoUser = req.body;
+      res.json({
+        message: "Foto editada con éxito",
+      });
+    }
+  });
+});
+
+app.use((req, res) => {
+  res.status(404).send({
+    status: "error",
+    mesage: "Not found",
+  });
+});
+app.use((error, req, res, next) => {
+  console.log(error);
+  res.status(404).send({
+    status: "error",
+    mesasage: "Not found",
+  });
+});
+
+app.listen(PORT || 3000, () => {
+  console.log(`Escuchando http://localhost:${PORT}`);
 });
