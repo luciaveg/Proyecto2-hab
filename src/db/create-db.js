@@ -1,6 +1,7 @@
 import "dotenv/config.js";
+import connectDB from "./create-pool.js";
 
-import db from "./connection-db.js";
+const db = connectDB();
 
 const DB_NAME = process.env.MYSQL_DB;
 
@@ -18,9 +19,8 @@ CREATE TABLE users (
     nickName VARCHAR(64) UNIQUE,
     email VARCHAR(60) UNIQUE,
     password VARCHAR(64) NOT NULL,
-    profilePictureURL VARCHAR(64),
-    createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    isEnabled BOOLEAN NOT NULL DEFAULT TRUE
+    profilePictureURL VARCHAR(200),
+    createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
 `);
 
@@ -74,4 +74,6 @@ CREATE TABLE photos (
     userNewId INT UNSIGNED NOT NULL,
     FOREIGN KEY (userNewId) REFERENCES users(id)
 );`);
+
+console.log(`Base de Datos Creada con Éxito`);
 await db.end();

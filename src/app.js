@@ -1,8 +1,9 @@
 import "dotenv/config.js";
 import express from "express";
 import bcrypt from "bcrypt";
-import db from "../src/db/db.js";
 import jwt from "jsonwebtoken";
+import db from "./db/create-pool.js";
+
 //import bodyParser from "body-parser";
 
 const app = express();
@@ -27,7 +28,7 @@ app.post("/register", async (req, res) => {
   res.status(200).send("Fué Registrado Exitosamente !");
 });
 
-app.put("/register/:id", verifyToken, (req, res) => {
+app.put("/register/:id", (req, res) => {
   jwt.verify(req.token, "secretKey", (err, authData) => {
     if (err) {
       res.sendStatus(403);
@@ -84,32 +85,42 @@ app.post("/login", async (req, res) => {
 
 function verifyToken(req, res, next) {
   const bearerHeader = req.headers["authorization"];
-
+  console.log(bearerHeader);
   if (typeof bearerHeader !== "undefined") {
-    const bearerToken = bearerHeader.split(" ")[1];
-    req.token = bearerToken;
+    // const bearerToken = bearerHeader.split(" ")[1];
+    try {
+      const payload = jwt.verify(bearerHeader, process.env.JWT_SECRET);
+      console.log(payload);
+      req.userData = payload;
+    } catch (error) {
+      res.sendStatus(401);
+    }
+
     next();
   } else {
     res.sendStatus(401);
   }
 }
 
-app.post("/news", verifyToken, (req, res) => {
-  jwt.verify(req.token, "secretKey", (err, authData) => {
-    if (err) {
-      res.sendStatus(403);
-    }
-    if (!bearerToken) {
-      res.status(401).send("unauthorized");
-    } else {
-      const newNews = req.body;
-
-      res.json({ message: "Noticia creada con éxito", data: newNews });
-    }
-  });
+app.post("/news", verifyToken, async (req, res) => {
+  try {
+    const pool = db(process.env.MYSQL_DB);
+    const { title, description, text, theme } = req.body;
+    const user = req.userData.id;
+    const sql =
+      "INSERT INTO news (title, description, text, themeId, ownerId) VALUES (?,?,?,?,?)";
+    await pool.execute(sql, [title, description, text, theme, user]);
+    res.send({
+      Status: "ok",
+      message: "Noticia Guardada con Éxito",
+    });
+  } catch (e) {
+    console.log(e);
+    res.status(500).json({ error: "Error al guardar noticias" });
+  }
 });
 
-app.get("/news?today", async (req, res) => {
+app.get("/news/today", async (req, res) => {
   try {
     let newsToday = `SELECT * FROM news WHERE publishedAt DATETIME = CURRENT_TIMESTAMP`;
     if (!newsToday) {
@@ -118,7 +129,7 @@ app.get("/news?today", async (req, res) => {
     if (newsToday) {
       newsToday += " ORDER BY createdAt DESC";
 
-      const [rows] = await db.execute(sqlQuery);
+      const [rows] = await db.execute(newsToday);
 
       res.json(rows);
     }
@@ -126,25 +137,6 @@ app.get("/news?today", async (req, res) => {
     res.status(500).json({ error: "Error al obtener noticias" });
   }
   return;
-});
-
-app.get("/news?theme?", async (req, res) => {
-  try {
-    let newsTheme = `SELECT * FROM news WHERE publishedAt DATETIME = CURRENT_TIMESTAMP`;
-    if (!newsTheme) {
-      res.status(500).json({ error: "No existen noticias con este Tema" });
-    }
-    if (newsTheme) {
-      newsTheme += " ORDER BY createdAt DESC";
-
-      const [rows] = await db.execute(sqlQuery);
-
-      res.json(rows);
-    }
-  } catch (error) {
-    res.status(500).json({ error: "Error al obtener noticias con este Tema" });
-    return;
-  }
 });
 
 app.put("/news/:id", verifyToken, (req, res) => {
@@ -173,47 +165,18 @@ app.delete("/delete/news/:id", verifyToken, (req, res) => {
   });
 });
 
-app.use(async (req, res, next) => {
-  try {
-    const db = getConnection();
-
-    const [rows] = await db.query(`SELECT * FROM news ORDER BY createdAt DESC`);
-
-    req.sortedNews = rows;
-
-    next();
-  } catch (error) {
-    console.error("Error al obtener noticias:", error);
-    res.status(500).json({ error: "Error al obtener noticias" });
-  }
-});
-
-app.get("/news", (req, res) => {
-  res.json(req.sortedNews);
-});
-
-app.use("/news", (req, res, next) => {
-  const themeId = req.query.theme;
-
-  // Si se proporciona un parámetro de tema en la URL
-  if (themeId) {
-    req.themeFilter = themeId;
-  }
-
-  next();
-});
-
 app.get("/news", async (req, res) => {
   try {
     let sqlQuery = "SELECT * FROM news";
+    const pool = db(process.env.MYSQL_DB);
 
     if (req.themeFilter) {
       sqlQuery += ` WHERE themeId = ${req.themeFilter}`;
     }
 
-    sqlQuery += " ORDER BY createdAt DESC";
-
-    const [rows] = await db.execute(sqlQuery);
+    //sqlQuery += " ORDER BY createdAt DESC";
+    console.log(sqlQuery);
+    const [rows] = await pool.execute(sqlQuery, [theme]);
 
     res.json(rows);
   } catch (error) {
