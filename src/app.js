@@ -1,8 +1,9 @@
 import "dotenv/config.js";
 import express from "express";
-import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import db from "./db/create-pool.js";
+import { registerUser, editUser, loginUser } from "./controlers/users.js";
+import verifyToken from "./routes/authentication.js";
 
 //import bodyParser from "body-parser";
 
@@ -12,111 +13,38 @@ const PORT = Number(process.env.MYSQL_PORT);
 
 app.use(express.json());
 
-app.post("/register", async (req, res) => {
-  const { nickName, email, password } = req.body;
+app.post("/register", registerUser);
 
-  const hashedPassword = await bcrypt.hash(password, 12);
+app.put("/user/:id", editUser);
 
-  const pool = db(process.env.MYSQL_DB);
+app.post("/login", loginUser);
 
-  await pool.execute(
-    `INSERT INTO users(nickName, email, password) 
-        VALUES (?, ?, ?)`,
-    [nickName, email, hashedPassword]
-  );
-
-  res.status(200).send("Fué Registrado Exitosamente !");
-});
-
-app.put("/register/:id", (req, res) => {
-  jwt.verify(req.token, "secretKey", (err, authData) => {
-    if (err) {
-      res.sendStatus(403);
-    } else {
-      const editUser = req.params.userId;
-      const updatedUser = req.body;
-
-      res.json({
-        message: "Noticia editada con éxito",
-      });
-    }
-  });
-});
-
-app.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-
-  const pool = db(process.env.MYSQL_DB);
-
-  const [result] = await pool.execute(`SELECT * FROM users WHERE email = ?`, [
-    email,
-  ]);
-  const maybeUser = result[0];
-  if (!maybeUser) {
-    res.status(400).json({
-      error: "Credenciales NO validas",
-    });
-    return;
-  }
-
-  const doesPasswordMatch = await bcrypt.compare(password, maybeUser.password);
-  if (!doesPasswordMatch) {
-    res.status(400).json({
-      error: "Credenciales NO validas",
-    });
-    return;
-  }
-
-  const token = jwt.sign(
-    {
-      id: maybeUser.id,
-      nickName: maybeUser.nickName,
-      profilePictureURL: maybeUser.profilePictureURL,
-    },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: "5d",
-    }
-  );
-  res.status(200).json({
-    token,
-  });
-});
-
-function verifyToken(req, res, next) {
-  const bearerHeader = req.headers["authorization"];
-  console.log(bearerHeader);
-  if (typeof bearerHeader !== "undefined") {
-    // const bearerToken = bearerHeader.split(" ")[1];
-    try {
-      const payload = jwt.verify(bearerHeader, process.env.JWT_SECRET);
-      console.log(payload);
-      req.userData = payload;
-    } catch (error) {
-      res.sendStatus(401);
-    }
-
-    next();
-  } else {
-    res.sendStatus(401);
-  }
-}
-
-app.post("/news", verifyToken, async (req, res) => {
+app.post("/news", verifyToken, async (req, res, next) => {
   try {
     const pool = db(process.env.MYSQL_DB);
     const { title, description, text, theme } = req.body;
+    if (!title || !description || !text || !theme) {
+      throw new Error("Faltan datos");
+    }
     const user = req.userData.id;
-    const sql =
-      "INSERT INTO news (title, description, text, themeId, ownerId) VALUES (?,?,?,?,?)";
-    await pool.execute(sql, [title, description, text, theme, user]);
+
+    let sql;
+    try {
+      sql =
+        "INSERT INTO news (title, description, text, themeId, ownerId) VALUES (?,?,?,?,?)";
+      await pool.execute(sql, [title, description, text, theme, user]);
+    } catch (e) {
+      console.log(e);
+      throw new Error("Error al guardar en la BBDD");
+    }
+
     res.send({
       Status: "ok",
       message: "Noticia Guardada con Éxito",
     });
   } catch (e) {
     console.log(e);
-    res.status(500).json({ error: "Error al guardar noticias" });
+    next(e);
   }
 });
 
@@ -139,19 +67,20 @@ app.get("/news/today", async (req, res) => {
   return;
 });
 
-app.put("/news/:id", verifyToken, (req, res) => {
-  jwt.verify(req.token, "secretKey", (err, authData) => {
-    if (err) {
-      res.sendStatus(403);
-    } else {
-      const newsId = req.params.idNews;
-      const updatedNewsData = req.body;
-
-      res.json({
-        message: "Noticia editada con éxito",
-      });
+app.put("/news/:idNews", verifyToken, (req, res, next) => {
+  try {
+    console.log("editando");
+    const newsId = req.params.idNews;
+    const updatedNewsData = req.body;
+    if (isNaN(newsId)) {
+      throw new Error("El Id debe ser un número");
     }
-  });
+    res.json({
+      message: "Noticia editada con éxito",
+    });
+  } catch (e) {
+    next(e);
+  }
 });
 
 app.delete("/delete/news/:id", verifyToken, (req, res) => {
@@ -306,9 +235,9 @@ app.use((req, res) => {
 });
 app.use((error, req, res, next) => {
   console.log(error);
-  res.status(404).send({
+  res.status(error.status || 500).send({
     status: "error",
-    mesasage: "Not found",
+    mesasage: error.message,
   });
 });
 
