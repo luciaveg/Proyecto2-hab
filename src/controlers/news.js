@@ -1,17 +1,20 @@
+import db from "../db/create-pool.js";
+const pool = db(process.env.MYSQL_DB);
 export const insertNewNews = async (req, res, next) => {
   try {
-    const pool = db(process.env.MYSQL_DB);
     const { title, description, text, theme } = req.body;
     if (!title || !description || !text || !theme) {
       throw new Error("Faltan datos");
     }
-    const user = req.userData.id;
+    const user = req.userData;
+    console.log(user);
 
-    let sql;
     try {
-      sql =
-        "INSERT INTO news (title, description, text, themeId, ownerId) VALUES (?,?,?,?,?)";
-      await pool.execute(sql, [title, description, text, theme, user]);
+      if (!title || !description || !text || !theme || !user) {
+        throw new Error("Faltan datos");
+      }
+      let sql = `INSERT INTO news (title, description, text, themeId, ownerId) VALUES (?,?,?,?,?)`;
+      await pool.execute(sql, [title, description, text, theme, user.id]);
     } catch (e) {
       console.log(e);
       throw new Error("Error al guardar en la BBDD");

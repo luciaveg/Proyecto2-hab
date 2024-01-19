@@ -1,10 +1,10 @@
+import auth from "./middlewares/authentication.js";
 import "dotenv/config.js";
 import express from "express";
 import jwt from "jsonwebtoken";
 import db from "./db/create-pool.js";
 import { registerUser, editUser, loginUser } from "./controlers/users.js";
 import { errorMessage, errorNotFound } from "./utils/errors.js";
-import { connectionPort3000 } from "./controlers/connection.js";
 import {
   allNews,
   insertNewNews,
@@ -25,17 +25,17 @@ app.use(express.json());
 
 app.post("/register", registerUser);
 
-app.put("/user/:id", editUser);
+app.put("/user/:id", auth, editUser);
 
 app.post("/login", loginUser);
 
-app.post("/news", insertNewNews);
+app.post("/newnews", auth, insertNewNews);
 
 app.get("/news/today", newsToday);
 
-app.put("/news/:id", newsEdit);
+app.put("/news/:id", auth, newsEdit);
 
-app.delete("/news/:id/delete", newsDelete);
+app.delete("/news/:id/delete", auth, newsDelete);
 
 app.get("/news", allNews);
 
@@ -98,8 +98,15 @@ app.put("/user/:id/photo", (req, res) => {
   });
 });
 
+app.get("/", (req, res) => {
+  console.log("test");
+  res.send({ test: "ok" });
+});
+
 app.use(errorNotFound);
 
 app.use(errorMessage);
 
-app.listen(connectionPort3000);
+app.listen(PORT || 3000, () => {
+  console.log(`Escuchando http://localhost:${PORT}`);
+});

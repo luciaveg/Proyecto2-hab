@@ -2,20 +2,24 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import db from "../db/create-pool.js";
 
-export const registerUser = async (req, res) => {
-  const { nickName, email, password } = req.body;
+export const registerUser = async (req, res, next) => {
+  try {
+    const { nickName, email, password } = req.body;
 
-  const hashedPassword = await bcrypt.hash(password, 12);
+    const hashedPassword = await bcrypt.hash(password, 12);
 
-  const pool = db(process.env.MYSQL_DB);
+    const pool = db(process.env.MYSQL_DB);
 
-  await pool.execute(
-    `INSERT INTO users(nickName, email, password) 
+    await pool.execute(
+      `INSERT INTO users(nickName, email, password) 
           VALUES (?, ?, ?)`,
-    [nickName, email, hashedPassword]
-  );
+      [nickName, email, hashedPassword]
+    );
 
-  res.status(200).send("Fué Registrado Exitosamente !");
+    res.status(200).send("Fué Registrado Exitosamente !");
+  } catch (e) {
+    next(e);
+  }
 };
 
 export const editUser = (req, res) => {
