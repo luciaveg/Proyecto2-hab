@@ -1,9 +1,19 @@
+import auth from "./middlewares/authentication.js";
 import "dotenv/config.js";
 import express from "express";
 import jwt from "jsonwebtoken";
 import db from "./db/create-pool.js";
 import { registerUser, editUser, loginUser } from "./controlers/users.js";
-import verifyToken from "./routes/authentication.js";
+import { errorMessage, errorNotFound } from "./utils/errors.js";
+import {
+  allNews,
+  insertNewNews,
+  newsDelete,
+  newsEdit,
+  newsToday,
+  oneNew,
+} from "./controlers/news.js";
+import { themes } from "./controlers/themes.js";
 
 //import bodyParser from "body-parser";
 
@@ -15,147 +25,23 @@ app.use(express.json());
 
 app.post("/register", registerUser);
 
-app.put("/user/:id", editUser);
+app.put("/user/:id", auth, editUser);
 
 app.post("/login", loginUser);
 
-app.post("/news", verifyToken, async (req, res, next) => {
-  try {
-    const pool = db(process.env.MYSQL_DB);
-    const { title, description, text, theme } = req.body;
-    if (!title || !description || !text || !theme) {
-      throw new Error("Faltan datos");
-    }
-    const user = req.userData.id;
+app.post("/newnews", auth, insertNewNews);
 
-    let sql;
-    try {
-      sql =
-        "INSERT INTO news (title, description, text, themeId, ownerId) VALUES (?,?,?,?,?)";
-      await pool.execute(sql, [title, description, text, theme, user]);
-    } catch (e) {
-      console.log(e);
-      throw new Error("Error al guardar en la BBDD");
-    }
+app.get("/news/today", newsToday);
 
-    res.send({
-      Status: "ok",
-      message: "Noticia Guardada con Éxito",
-    });
-  } catch (e) {
-    console.log(e);
-    next(e);
-  }
-});
+app.put("/news/:id", auth, newsEdit);
 
-app.get("/news/today", async (req, res) => {
-  try {
-    let newsToday = `SELECT * FROM news WHERE publishedAt DATETIME = CURRENT_TIMESTAMP`;
-    if (!newsToday) {
-      res.status(500).json({ error: "No existen noticias de hoy" });
-    }
-    if (newsToday) {
-      newsToday += " ORDER BY createdAt DESC";
+app.delete("/news/:id/delete", auth, newsDelete);
 
-      const [rows] = await db.execute(newsToday);
+app.get("/news", allNews);
 
-      res.json(rows);
-    }
-  } catch (error) {
-    res.status(500).json({ error: "Error al obtener noticias" });
-  }
-  return;
-});
+app.get("/news/:id", oneNew);
 
-app.put("/news/:idNews", verifyToken, (req, res, next) => {
-  try {
-    console.log("editando");
-    const newsId = req.params.idNews;
-    const updatedNewsData = req.body;
-    if (isNaN(newsId)) {
-      throw new Error("El Id debe ser un número");
-    }
-    res.json({
-      message: "Noticia editada con éxito",
-    });
-  } catch (e) {
-    next(e);
-  }
-});
-
-app.delete("/delete/news/:id", verifyToken, (req, res) => {
-  jwt.verify(req.token, "secretKey", (err, authData) => {
-    if (err) {
-      res.sendStatus(403);
-    } else {
-      `DELETE * FROM news WHERE id = ?`,
-        res.json({ message: "Noticia eliminada con éxito" });
-    }
-  });
-});
-
-app.get("/news", async (req, res) => {
-  try {
-    let sqlQuery = "SELECT * FROM news";
-    const pool = db(process.env.MYSQL_DB);
-
-    if (req.themeFilter) {
-      sqlQuery += ` WHERE themeId = ${req.themeFilter}`;
-    }
-
-    //sqlQuery += " ORDER BY createdAt DESC";
-    console.log(sqlQuery);
-    const [rows] = await pool.execute(sqlQuery, [theme]);
-
-    res.json(rows);
-  } catch (error) {
-    console.error("Error al obtener noticias:", error);
-    res.status(500).json({ error: "Error al obtener noticias" });
-  }
-});
-
-app.get("/news/:idNews", async (req, res) => {
-  try {
-    const newsId = req.params.idNews;
-
-    if (isNaN(newsId)) {
-      res.status(400).json({ error: "ID de noticia no válido" });
-      return;
-    }
-
-    const [result] = await db.execute(`SELECT * FROM news WHERE id = ?`, [
-      newsId,
-    ]);
-
-    if (result.length === 0) {
-      res.status(404).json({ error: "Noticia no encontrada" });
-      return;
-    }
-
-    const newsDetails = result[0];
-    res.json(newsDetails);
-  } catch (error) {
-    console.error("Error al obtener detalles de la noticia:", error);
-    res.status(500).json({ error: "Error al obtener detalles de la noticia" });
-  }
-});
-
-app.get("/themes/id", async (req, res) => {
-  try {
-    const [result] = await db.execute(`SELECT * FROM theme`);
-
-    if (result.length === 0) {
-      res.status(404).json({ error: "No se encontraron temas" });
-      return;
-    }
-
-    const themesList = result;
-    res.json(themesList);
-  } catch (error) {
-    console.error("Error al obtener la lista de temas:", error);
-    res.status(500).json({ error: "Error al obtener la lista de temas" });
-  }
-});
+app.get("/themes/:id", themes);
 
 app.get("/news", async (req, res) => {
   try {
@@ -199,22 +85,7 @@ app.get("/news", async (req, res) => {
   }
 });
 
-app.put("/register/:id", verifyToken, (req, res) => {
-  jwt.verify(req.token, "secretKey", (err, authData) => {
-    if (err) {
-      res.sendStatus(403);
-    } else {
-      const editUser = req.params.userId;
-      const updatedUser = req.body;
-
-      res.json({
-        message: "Noticia editada con éxito",
-      });
-    }
-  });
-});
-
-app.put("/user/:id/photo", verifyToken, (req, res) => {
+app.put("/user/:id/photo", (req, res) => {
   jwt.verify(req.token, "secretKey", (err, authData) => {
     if (err) {
       res.sendStatus(403);
@@ -227,19 +98,14 @@ app.put("/user/:id/photo", verifyToken, (req, res) => {
   });
 });
 
-app.use((req, res) => {
-  res.status(404).send({
-    status: "error",
-    mesage: "Not found",
-  });
+app.get("/", (req, res) => {
+  console.log("test");
+  res.send({ test: "ok" });
 });
-app.use((error, req, res, next) => {
-  console.log(error);
-  res.status(error.status || 500).send({
-    status: "error",
-    mesasage: error.message,
-  });
-});
+
+app.use(errorNotFound);
+
+app.use(errorMessage);
 
 app.listen(PORT || 3000, () => {
   console.log(`Escuchando http://localhost:${PORT}`);

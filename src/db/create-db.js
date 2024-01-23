@@ -16,8 +16,8 @@ console.log(`Creando tabla users...`);
 await db.query(`
 CREATE TABLE users (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    nickName VARCHAR(64) UNIQUE,
-    email VARCHAR(60) UNIQUE,
+    nickName VARCHAR(255) UNIQUE,
+    email VARCHAR(255) UNIQUE,
     password VARCHAR(64) NOT NULL,
     profilePictureURL VARCHAR(200),
     createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
