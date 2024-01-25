@@ -16,6 +16,29 @@ export const registerUser = async (req, res, next) => {
       [nickName, email, hashedPassword]
     );
 
+    if (!nickName || !email || !hashedPassword) {
+      throw new Error("Faltan Datos");
+    }
+
+    const [[maybeUserEmail]] = await db.execute(
+      `SELECT * FROM users WHERE email = ? LIMIT 1`,
+      [email]
+    );
+    if (maybeUserEmail) {
+      throw new Error("Email no válido!");
+    }
+
+    const [[maybeUserNickName]] = await db.execute(
+      `SELECT * FROM users WHERE nickName = ? LIMIT 1`,
+      [nickName]
+    );
+    if (maybeUserNickName) {
+      throw new Error("NickName no Válido");
+    }
+    if (maybeUserEmail === email && maybeUserNickName === nickName) {
+      throw new Error("Registro no Válido");
+    }
+
     res.status(200).send("Fué Registrado Exitosamente !");
   } catch (e) {
     next(e);
@@ -31,7 +54,7 @@ export const editUser = (req, res) => {
       const updatedUser = req.body;
 
       res.json({
-        message: "Noticia editada con éxito",
+        message: "Usuario editada con éxito",
       });
     }
   });

@@ -14,6 +14,8 @@ import {
   oneNew,
 } from "./controlers/news.js";
 import { themes } from "./controlers/themes.js";
+import fileUpload from "express-fileupload";
+import { insertPhoto } from "./controlers/photos.js";
 
 //import bodyParser from "body-parser";
 
@@ -31,6 +33,9 @@ app.post("/login", loginUser);
 
 app.post("/newnews", auth, insertNewNews);
 
+const fileParser = fileUpload();
+app.post("/newnews/:newsId/photo", fileParser, insertPhoto);
+
 app.get("/news/today", newsToday);
 
 app.put("/news/:id", auth, newsEdit);
@@ -43,7 +48,7 @@ app.get("/news/:id", oneNew);
 
 app.get("/themes/:id", themes);
 
-app.get("/news", async (req, res) => {
+app.get("/ne", async (req, res) => {
   try {
     let sqlQuery = `
       SELECT 

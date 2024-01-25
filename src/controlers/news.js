@@ -9,30 +9,23 @@ export const insertNewNews = async (req, res, next) => {
     const user = req.userData;
     console.log(user);
 
-    try {
-      if (!title || !description || !text || !theme || !user) {
-        throw new Error("Faltan datos");
-      }
-      let sql = `INSERT INTO news (title, description, text, themeId, ownerId) VALUES (?,?,?,?,?)`;
-      await pool.execute(sql, [title, description, text, theme, user.id]);
-    } catch (e) {
-      console.log(e);
-      throw new Error("Error al guardar en la BBDD");
-    }
-
-    res.send({
-      Status: "ok",
-      message: "Noticia Guardada con Éxito",
-    });
+    let sql = `INSERT INTO news (title, description, text, themeId, ownerId)
+      VALUES (?,?,?,?,?)`;
+    await pool.execute(sql, [title, description, text, theme, user.id]);
   } catch (e) {
     console.log(e);
-    next(e);
+    throw new Error("Error al guardar en la BBDD");
   }
+
+  res.send({
+    status: "ok",
+    message: "Noticia Guardada con Éxito",
+  });
 };
 
 export const newsToday = async (req, res) => {
   try {
-    let newsToday = `SELECT * FROM news WHERE publishedAt DATETIME = DATETIMENOW`;
+    let newsToday = `SELECT * FROM news WHERE publishedAt DATETIME = DATETIME`;
     if (!newsToday) {
       res.status(500).json({ error: "No existen noticias de hoy" });
     }
@@ -69,28 +62,31 @@ export const newsEdit = async (req, res, next) => {
   }
 };
 
-export const newsDelete = (req, res) => {
-  jwt.verify(req.token, "secretKey", (err, authData) => {
-    if (err) {
-      res.sendStatus(403);
-    } else {
-      `DELETE * FROM news WHERE id = ?`,
-        res.json({ message: "Noticia eliminada con éxito" });
+export const newsDelete = (req, res, next) => {
+  try {
+    let newsToDelete = `SELECT * FROM news WHERE id = ?`;
+    if (newsToDelete) {
+      `DELETE FROM news WHERE id = ?`;
     }
-  });
+  } catch (e) {
+    next(e);
+  }
 };
 
 export const allNews = async (req, res) => {
   try {
-    let sqlQuery = "SELECT * FROM news";
+    let sqlQuery = `SELECT * FROM themes`;
     const pool = db(process.env.MYSQL_DB);
-
-    if (req.themeFilter) {
-      sqlQuery += ` WHERE themeId = ${req.themeFilter}`;
+    //console.log(theme);
+    const theme = req.themeFilter;
+    if (theme) {
+      sqlQuery += ` WHERE themeId = ${theme}`;
     }
-
+    if (!theme) {
+      throw new Error("No existe ese Tema");
+    }
     //sqlQuery += " ORDER BY createdAt DESC";
-    console.log(sqlQuery);
+    //console.log(sqlQuery);
     const [rows] = await pool.execute(sqlQuery, [theme]);
 
     res.json(rows);
