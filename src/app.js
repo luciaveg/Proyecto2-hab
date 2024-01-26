@@ -7,7 +7,7 @@ import { registerUser, editUser, loginUser } from "./controlers/users.js";
 import { errorMessage, errorNotFound } from "./utils/errors.js";
 import {
   allNews,
-  insertNewNews,
+  insertNews,
   newsDelete,
   newsEdit,
   newsToday,
@@ -16,22 +16,27 @@ import {
 import { themes } from "./controlers/themes.js";
 import fileUpload from "express-fileupload";
 import { insertPhoto } from "./controlers/photos.js";
+import path from "path";
 
-//import bodyParser from "body-parser";
+const PUBLIC_DIR = path.join(process.cwd(), "public");
 
 const app = express();
-
+const staticFileHandler = express.static(PUBLIC_DIR);
+app.use(staticFileHandler);
 const PORT = Number(process.env.MYSQL_PORT);
 
+app.use(fileUpload());
 app.use(express.json());
 
 app.post("/register", registerUser);
 
-app.put("/user/:id", auth, editUser);
-
 app.post("/login", loginUser);
 
-app.post("/newnews", auth, insertNewNews);
+app.get("/news", allNews);
+
+app.post("/news", auth, insertNews);
+
+app.put("/user/:id", auth, editUser);
 
 const fileParser = fileUpload();
 app.post("/newnews/:newsId/photo", fileParser, insertPhoto);
@@ -40,13 +45,11 @@ app.get("/news/today", newsToday);
 
 app.put("/news/:id", auth, newsEdit);
 
-app.delete("/news/:id/delete", auth, newsDelete);
-
-app.get("/news", allNews);
+app.delete("/news/:id", auth, newsDelete);
 
 app.get("/news/:id", oneNew);
 
-app.get("/themes/:id", themes);
+app.get("/themes", themes);
 
 app.get("/ne", async (req, res) => {
   try {

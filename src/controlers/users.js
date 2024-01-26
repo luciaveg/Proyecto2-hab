@@ -10,34 +10,33 @@ export const registerUser = async (req, res, next) => {
 
     const pool = db(process.env.MYSQL_DB);
 
+    if (!nickName || !email || !hashedPassword) {
+      throw new Error("Faltan Datos");
+    }
+
+    const [[maybeUserEmail]] = await pool.execute(
+      `SELECT * FROM users WHERE email = ? LIMIT 1`,
+      [email]
+    );
+    if (maybeUserEmail) {
+      throw new Error("Email en uso!");
+    }
+
+    const [[maybeUserNickName]] = await pool.execute(
+      `SELECT * FROM users WHERE nickName = ? LIMIT 1`,
+      [nickName]
+    );
+    if (maybeUserNickName) {
+      throw new Error("NickName en uso");
+    }
+    if (maybeUserEmail === email && maybeUserNickName === nickName) {
+      throw new Error("Registro no Válido");
+    }
     await pool.execute(
       `INSERT INTO users(nickName, email, password) 
           VALUES (?, ?, ?)`,
       [nickName, email, hashedPassword]
     );
-
-    if (!nickName || !email || !hashedPassword) {
-      throw new Error("Faltan Datos");
-    }
-
-    const [[maybeUserEmail]] = await db.execute(
-      `SELECT * FROM users WHERE email = ? LIMIT 1`,
-      [email]
-    );
-    if (maybeUserEmail) {
-      throw new Error("Email no válido!");
-    }
-
-    const [[maybeUserNickName]] = await db.execute(
-      `SELECT * FROM users WHERE nickName = ? LIMIT 1`,
-      [nickName]
-    );
-    if (maybeUserNickName) {
-      throw new Error("NickName no Válido");
-    }
-    if (maybeUserEmail === email && maybeUserNickName === nickName) {
-      throw new Error("Registro no Válido");
-    }
 
     res.status(200).send("Fué Registrado Exitosamente !");
   } catch (e) {

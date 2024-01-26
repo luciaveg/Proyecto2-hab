@@ -2,9 +2,9 @@ import db from "../db/create-pool.js";
 
 export const themes = async (req, res, next) => {
   try {
-    let allThemes = `SELECT * FROM themes WHERE id = ?`;
+    let sql = `SELECT * FROM themes`;
     const pool = db(process.env.MYSQL_DB);
-
+    const [allThemes] = await pool.execute(sql);
     if (!allThemes) {
       res.status(404).json({ error: "No se encontraron temas" });
       return;

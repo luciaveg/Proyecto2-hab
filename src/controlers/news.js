@@ -1,26 +1,47 @@
 import db from "../db/create-pool.js";
+import { insertPhoto } from "./photos.js";
+import path from "path";
+import fs from "fs/promises";
+
 const pool = db(process.env.MYSQL_DB);
-export const insertNewNews = async (req, res, next) => {
+const PUBLIC_DIR = path.join(process.cwd(), "public");
+
+export const insertNews = async (req, res, next) => {
   try {
     const { title, description, text, theme } = req.body;
+    console.log(req.files);
     if (!title || !description || !text || !theme) {
       throw new Error("Faltan datos");
     }
+    let photo = null;
     const user = req.userData;
-    console.log(user);
+    if (req.files?.photo) {
+      photo = await insertPhoto(req.files.photo);
+      console.log(photo);
+    }
+    try {
+      let sql = `INSERT INTO news (title, description, text, themeId, ownerId, pictureURL)
+      VALUES (?,?,?,?,?,?)`;
+      const [{ insertId }] = await pool.execute(sql, [
+        title,
+        description,
+        text,
+        theme,
+        user.id,
+        photo,
+      ]);
+    } catch (e) {
+      throw new Error("Error al guardar en la BBDD");
+    }
 
-    let sql = `INSERT INTO news (title, description, text, themeId, ownerId)
-      VALUES (?,?,?,?,?)`;
-    await pool.execute(sql, [title, description, text, theme, user.id]);
+    res.send({
+      status: "ok",
+      message: "Noticia Guardada con Éxito",
+    });
   } catch (e) {
     console.log(e);
-    throw new Error("Error al guardar en la BBDD");
+    next(e);
   }
-
-  res.send({
-    status: "ok",
-    message: "Noticia Guardada con Éxito",
-  });
 };
 
 export const newsToday = async (req, res) => {
@@ -32,7 +53,7 @@ export const newsToday = async (req, res) => {
     if (newsToday) {
       newsToday += " ORDER BY createdAt DESC";
 
-      const [rows] = await db.execute(newsToday);
+      const [rows] = await pool.execute(newsToday);
 
       res.json(rows);
     }
@@ -50,7 +71,7 @@ export const newsEdit = async (req, res, next) => {
     if (isNaN(newsId)) {
       throw new Error("El Id debe ser un número");
     }
-    const [result] = await db.execute(`SELECT * FROM news WHERE id = ?`, [
+    const [result] = await pool.execute(`SELECT * FROM news WHERE id = ?`, [
       newsId,
     ]);
 
@@ -62,37 +83,72 @@ export const newsEdit = async (req, res, next) => {
   }
 };
 
-export const newsDelete = (req, res, next) => {
+export const newsDelete = async (req, res, next) => {
   try {
-    let newsToDelete = `SELECT * FROM news WHERE id = ?`;
-    if (newsToDelete) {
-      `DELETE FROM news WHERE id = ?`;
+    const noticeId = req.params.id;
+    const ownerId = req.userData.id;
+    console.log(ownerId);
+    const [[notice]] = await pool.execute(
+      `SELECT * FROM news WHERE id = ? LIMIT 1`,
+      [noticeId]
+    );
+    const photo = notice.pictureURL;
+    if (!notice) {
+      res.status(404).json({
+        error: "Noticia no encontrada",
+      });
+      return;
     }
+
+    if (notice.ownerId != ownerId) {
+      res.status(401).json({
+        error: "No está autorizado para borrar ésta Noticia",
+      });
+      return;
+    }
+    if (photo) {
+      await fs.unlink(path.join(PUBLIC_DIR, photo));
+    }
+    const deleted = await pool.execute(`DELETE FROM news WHERE id= ?`, [
+      noticeId,
+    ]);
+    res.send({
+      message: "Noticia Borrada correctamente",
+    });
   } catch (e) {
     next(e);
   }
 };
 
-export const allNews = async (req, res) => {
+export const allNews = async (req, res, next) => {
   try {
-    let sqlQuery = `SELECT * FROM themes`;
-    const pool = db(process.env.MYSQL_DB);
+    let sqlQuery = `SELECT * FROM news`;
+
     //console.log(theme);
-    const theme = req.themeFilter;
+    const { theme } = req.query;
     if (theme) {
-      sqlQuery += ` WHERE themeId = ${theme}`;
+      //deberia comprabarse q existe ese tema en la base datos
+
+      const [dbTheme] = await pool.execute(
+        `SELECT * FROM themes WHERE id = ?`,
+        [theme]
+      );
+      if (!dbTheme.length) {
+        throw new Error("No existe ese Tema");
+      }
+
+      sqlQuery += ` WHERE themeId = ?`;
     }
-    if (!theme) {
-      throw new Error("No existe ese Tema");
-    }
+
     //sqlQuery += " ORDER BY createdAt DESC";
     //console.log(sqlQuery);
-    const [rows] = await pool.execute(sqlQuery, [theme]);
+    const [rows] = await pool.execute(sqlQuery, theme ? [theme] : null);
 
     res.json(rows);
   } catch (error) {
-    console.error("Error al obtener noticias:", error);
-    res.status(500).json({ error: "Error al obtener noticias" });
+    next(error);
+    /*console.error("Error al obtener noticias:", error);
+    res.status(500).json({ error: "Error al obtener noticias" });*/
   }
 };
 
