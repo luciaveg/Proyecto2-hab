@@ -66,7 +66,7 @@ export const newsToday = async (req, res) => {
 export const newsEdit = async (req, res, next) => {
   try {
     console.log("editando");
-    const newsId = req.params.idNews;
+    const newsId = req.params.id;
 
     if (isNaN(newsId)) {
       throw new Error("El Id debe ser un número");
@@ -154,14 +154,14 @@ export const allNews = async (req, res, next) => {
 
 export const oneNew = async (req, res) => {
   try {
-    const newsId = req.params.idNews;
+    const newsId = req.params.id;
 
     if (isNaN(newsId)) {
       res.status(400).json({ error: "ID de noticia no válido" });
       return;
     }
 
-    const [result] = await db.execute(`SELECT * FROM news WHERE id = ?`, [
+    const [result] = await pool.execute(`SELECT * FROM news WHERE id = ?`, [
       newsId,
     ]);
 

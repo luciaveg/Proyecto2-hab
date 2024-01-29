@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import db from "../db/create-pool.js";
 
+const pool = db(process.env.MYSQL_DB);
 export const registerUser = async (req, res, next) => {
   try {
     const { nickName, email, password } = req.body;
@@ -44,8 +45,26 @@ export const registerUser = async (req, res, next) => {
   }
 };
 
-export const editUser = (req, res) => {
-  jwt.verify(req.token, "secretKey", (err, authData) => {
+export const editUser = async (req, res, next) => {
+  try {
+    console.log("editando");
+    const newsId = req.params.id;
+
+    if (isNaN(newsId)) {
+      throw new Error("El Id debe ser un número");
+    }
+    const [result] = await pool.execute(`SELECT * FROM news WHERE id = ?`, [
+      newsId,
+    ]);
+
+    res.json({
+      message: "Noticia editada con éxito",
+    });
+  } catch (e) {
+    next(e);
+  }
+
+  /*  jwt.verify(req.token, "secretKey", (err, authData) => {
     if (err) {
       res.sendStatus(403);
     } else {
@@ -53,10 +72,11 @@ export const editUser = (req, res) => {
       const updatedUser = req.body;
 
       res.json({
-        message: "Usuario editada con éxito",
+        status: "ok",
+        message: "Usuario editado con éxito",
       });
     }
-  });
+  });*/
 };
 
 export const loginUser = async (req, res) => {
