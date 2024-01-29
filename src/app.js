@@ -45,13 +45,13 @@ app.get("/news/today", newsToday);
 
 app.put("/news/:id", auth, newsEdit);
 
-app.delete("/news/:id", auth, newsDelete);
+app.delete("/news/:id/delete", auth, newsDelete);
 
 app.get("/news/:id", oneNew);
 
 app.get("/themes", themes);
 
-app.get("/ne", async (req, res) => {
+app.get("/news/vote", async (req, res) => {
   try {
     let sqlQuery = `
       SELECT 
