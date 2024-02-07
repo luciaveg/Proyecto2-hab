@@ -5,6 +5,7 @@ import fs from "fs/promises";
 
 const pool = db(process.env.MYSQL_DB);
 const PUBLIC_DIR = path.join(process.cwd(), "public");
+const PHOTOS_DIR = path.join(PUBLIC_DIR, "photos");
 
 export const insertNews = async (req, res, next) => {
   try {
@@ -68,12 +69,40 @@ export const newsEdit = async (req, res, next) => {
     console.log("editando");
     const newsId = req.params.id;
 
+    const { title, description, text, theme } = req.body;
+    console.log(req.files);
+    if (!title || !description || !text || !theme) {
+      throw new Error("Faltan datos");
+    }
+
     if (isNaN(newsId)) {
       throw new Error("El Id debe ser un número");
     }
     const [result] = await pool.execute(`SELECT * FROM news WHERE id = ?`, [
       newsId,
     ]);
+    if (!result.length) {
+      throw new Error("Esta Noticia no Existe");
+    }
+
+    const user = req.userData;
+    let { ownerId } = result[0];
+    console.log("user:", user, "owner:", ownerId);
+    if (user.id !== ownerId) {
+      throw new Error("No eres el dueño de la noticia");
+    }
+
+    let photo = result[0].pictureURL;
+    if (req.files?.photo) {
+      let oldPhoto = photo;
+      photo = await insertPhoto(req.files.photo);
+      console.log(photo);
+      fs.unlink(path.join(PUBLIC_DIR, oldPhoto));
+    }
+
+    let sql = `UPDATE news   SET title = ?, description = ?, text = ?, themeId=?, pictureURL=?
+     WHERE id = ?`;
+    await pool.execute(sql, [title, description, text, theme, photo, newsId]);
 
     res.json({
       message: "Noticia editada con éxito",
@@ -122,7 +151,7 @@ export const newsDelete = async (req, res, next) => {
 
 export const allNews = async (req, res, next) => {
   try {
-    let sqlQuery = `SELECT * FROM news`;
+    let sqlQuery = `SELECT n.*, nickName, profilePictureURL FROM news n LEFT JOIN users u ON u.id = n.ownerId`;
 
     //console.log(theme);
     const { theme } = req.query;

@@ -17,6 +17,7 @@ import { themes } from "./controlers/themes.js";
 import fileUpload from "express-fileupload";
 import { insertPhoto } from "./controlers/photos.js";
 import path from "path";
+import cors from "cors";
 
 const PUBLIC_DIR = path.join(process.cwd(), "public");
 
@@ -27,6 +28,7 @@ const PORT = Number(process.env.MYSQL_PORT);
 
 app.use(fileUpload());
 app.use(express.json());
+app.use(cors());
 
 app.post("/register", registerUser);
 
