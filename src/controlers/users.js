@@ -48,18 +48,48 @@ export const registerUser = async (req, res, next) => {
 export const editUser = async (req, res, next) => {
   try {
     console.log("editando");
-    const newsId = req.params.id;
+    const userId = req.params.id;
 
-    if (isNaN(newsId)) {
+    const { nickName, email, password } = req.body;
+    console.log(req.files);
+    if (!nickName || !email || !password) {
+      throw new Error("Faltan datos");
+    }
+
+
+    if (isNaN(userId)) {
       throw new Error("El Id debe ser un número");
     }
-    const [result] = await pool.execute(`SELECT * FROM news WHERE id = ?`, [
-      newsId,
+    const [result] = await pool.execute(`SELECT * FROM users WHERE id = ?`, [
+      userId,
     ]);
+    if (!result.length) {
+      throw new Error("Este usuario no Existe");
+    }
 
+    const user = req.userData;
+    let { ownerId } = result[0];
+    console.log("user:", user, "owner:", ownerId);
+    if (user.id !== ownerId) {
+      throw new Error("No estas logueado");
+    }
+
+    let photo = result[0].profilePictureURL;
+    if (req.files?.photo) {
+      let oldPhoto = photo;
+      photo = await insertPhoto(req.files.photo);
+      console.log(photo);
+      fs.unlink(path.join(PUBLIC_DIR, oldPhoto));
+    }
+    let sql = `UPDATE users   SET nickName = ?, email = ?, password = ?, profilePictureURL=?
+    WHERE id = ?`;
+    await pool.execute(sql, [nickName, email, password, photo, userId]);
+    
+    
     res.json({
-      message: "Noticia editada con éxito",
+      message: "Usuario editado con éxito",
     });
+
   } catch (e) {
     next(e);
   }
