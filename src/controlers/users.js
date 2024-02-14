@@ -5,6 +5,7 @@ import db from "../db/create-pool.js";
 const pool = db(process.env.MYSQL_DB);
 export const registerUser = async (req, res, next) => {
   try {
+    console.log(req.body);
     const { nickName, email, password } = req.body;
 
     const hashedPassword = await bcrypt.hash(password, 12);
