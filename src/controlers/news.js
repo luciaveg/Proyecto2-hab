@@ -153,11 +153,8 @@ export const allNews = async (req, res, next) => {
   try {
     let sqlQuery = `SELECT n.*, nickName, profilePictureURL FROM news n LEFT JOIN users u ON u.id = n.ownerId`;
 
-    //console.log(theme);
     const { theme } = req.query;
     if (theme) {
-      //deberia comprabarse q existe ese tema en la base datos
-
       const [dbTheme] = await pool.execute(
         `SELECT * FROM themes WHERE id = ?`,
         [theme]
@@ -169,15 +166,14 @@ export const allNews = async (req, res, next) => {
       sqlQuery += ` WHERE themeId = ?`;
     }
 
-    //sqlQuery += " ORDER BY createdAt DESC";
-    //console.log(sqlQuery);
+    sqlQuery += " ORDER BY createdAt DESC";
+
     const [rows] = await pool.execute(sqlQuery, theme ? [theme] : null);
 
     res.json(rows);
   } catch (error) {
-    next(error);
-    /*console.error("Error al obtener noticias:", error);
-    res.status(500).json({ error: "Error al obtener noticias" });*/
+    console.error("Error al obtener noticias:", error);
+    res.status(500).json({ error: "Error al obtener noticias" });
   }
 };
 
